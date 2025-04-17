@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Button,
+  Alert,
 } from 'react-native';
 import { learningTopics } from '../data/learningContent';
 import { useRouter } from 'expo-router';
@@ -19,30 +20,74 @@ const HomeScreen = () => {
   const [showProgress, setShowProgress] = useState(false);
   const { completedTopics, completedExercises, quizScores, resetProgress } = useProgress();
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item, index }) => {
     const isCompleted = completedTopics.includes(item.id);
     const hasQuizScore = quizScores[item.id];
+    const previousTopicCompleted = index === 0 || completedTopics.includes(learningTopics[index - 1].id);
+    const isLocked = index > 0 && !previousTopicCompleted;
 
     return (
       <TouchableOpacity
-        style={[styles.topicCard, isCompleted && styles.completedTopicCard]}
-        onPress={() => router.push(`/topic/${item.id}`)}
+        style={[
+          styles.topicCard,
+          isCompleted && styles.completedTopicCard,
+          isLocked && styles.lockedTopicCard
+        ]}
+        onPress={() => {
+          if (isLocked) {
+            Alert.alert(
+              'Konu Kilitli',
+              'Önceki konuyu tamamlamadan bu konuya geçemezsiniz.'
+            );
+          } else {
+            router.push(`/topic/${item.id}`);
+          }
+        }}
       >
         <View style={styles.topicContent}>
           <View style={styles.topicHeader}>
-            <Text style={styles.topicTitle}>{item.title}</Text>
+            <Text style={[styles.topicTitle, isLocked && styles.lockedText]}>
+              {index + 1}. {item.title}
+              {isLocked && ' 🔒'}
+            </Text>
             {isCompleted && (
               <View style={styles.completedBadge}>
                 <Text style={styles.completedText}>Tamamlandı</Text>
               </View>
             )}
           </View>
-          <Text style={styles.topicDescription}>{item.description}</Text>
+          <Text style={[styles.topicDescription, isLocked && styles.lockedText]}>{item.description}</Text>
 
           {hasQuizScore && (
             <View style={styles.quizScoreContainer}>
               <Text style={styles.quizScoreText}>
                 Quiz: {hasQuizScore.score}/{hasQuizScore.total} ({hasQuizScore.percentage}%)
+              </Text>
+            </View>
+          )}
+
+          {isCompleted && (
+            <View style={styles.progressIndicator}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: '100%' }]} />
+              </View>
+              <Text style={styles.progressText}>100% Tamamlandı</Text>
+            </View>
+          )}
+
+          {!isCompleted && !isLocked && (
+            <View style={styles.progressIndicator}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: hasQuizScore ? '66%' : (completedExercises[item.id]?.length > 0 ? '33%' : '0%') }
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {hasQuizScore ? 'Quiz tamamlandı, konu tamamlanmadı' :
+                  (completedExercises[item.id]?.length > 0 ? 'Alıştırmalar başlandı' : 'Başlanmadı')}
               </Text>
             </View>
           )}
@@ -136,6 +181,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#4CAF50',
   },
+  lockedTopicCard: {
+    backgroundColor: '#f5f5f5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#9e9e9e',
+    opacity: 0.8,
+  },
   topicContent: {
     padding: 16,
   },
@@ -156,6 +207,9 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  lockedText: {
+    color: '#9e9e9e',
+  },
   completedBadge: {
     backgroundColor: '#4CAF50',
     borderRadius: 4,
@@ -173,10 +227,29 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 4,
     alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   quizScoreText: {
     fontSize: 12,
     color: '#1976d2',
+  },
+  progressIndicator: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666',
   },
 });
 

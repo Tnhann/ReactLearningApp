@@ -19,7 +19,10 @@ import { useProgress } from '../context/ProgressContext';
 const TopicDetailScreen = ({ topicId }) => {
   const router = useRouter();
   const [topic, setTopic] = useState(null);
-  const [activeTab, setActiveTab] = useState('content'); // 'content', 'exercises', 'quiz'
+  const [activeStep, setActiveStep] = useState('content'); // 'content', 'exercises', 'quiz'
+  const [contentCompleted, setContentCompleted] = useState(false);
+  const [exercisesCompleted, setExercisesCompleted] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
   const [topicExercises, setTopicExercises] = useState([]);
   const [topicQuiz, setTopicQuiz] = useState(null);
   const {
@@ -42,7 +45,17 @@ const TopicDetailScreen = ({ topicId }) => {
     // Konuya ait quiz'i yükle
     const topicQuiz = quizzes[topicId] || null;
     setTopicQuiz(topicQuiz);
-  }, [topicId]);
+
+    // Tamamlanma durumlarını kontrol et
+    const topicExercisesCompleted = completedExercises[topicId] || [];
+    setExercisesCompleted(topicExercisesCompleted.length >= topicExercises.length);
+
+    const topicQuizScore = quizScores[topicId];
+    setQuizCompleted(topicQuizScore && topicQuizScore.percentage >= 70); // %70 başarı kriteri
+
+    // Konu tamamlanmışsa içerik de tamamlanmış say
+    setContentCompleted(completedTopics.includes(topicId));
+  }, [topicId, completedTopics, completedExercises, quizScores]);
 
   if (!topic) {
     return (
@@ -96,14 +109,23 @@ const TopicDetailScreen = ({ topicId }) => {
     });
   };
 
+  // İçerik tamamlandığında çağrılacak fonksiyon
+  const handleContentComplete = () => {
+    setContentCompleted(true);
+    // İçerik tamamlandığında otomatik olarak alıştırmalara geç
+    setActiveStep('exercises');
+  };
+
   // Alıştırma tamamlandığında çağrılacak fonksiyon
   const handleExerciseComplete = (exerciseId) => {
     markExerciseAsCompleted(topicId, exerciseId);
 
-    // Tüm alıştırmalar tamamlandıysa konuyu tamamlandı olarak işaretle
-    const completedExercisesForTopic = completedExercises[topicId] || [];
-    if (completedExercisesForTopic.length === topicExercises.length) {
-      markTopicAsCompleted(topicId);
+    // Tüm alıştırmalar tamamlandıysa alıştırmaları tamamlanmış olarak işaretle
+    const completedExercisesForTopic = [...(completedExercises[topicId] || []), exerciseId];
+    if (completedExercisesForTopic.length >= topicExercises.length) {
+      setExercisesCompleted(true);
+      // Tüm alıştırmalar tamamlandığında otomatik olarak quiz'e geç
+      setActiveStep('quiz');
     }
   };
 
@@ -113,82 +135,162 @@ const TopicDetailScreen = ({ topicId }) => {
 
     // Quiz başarılıysa konuyu tamamlandı olarak işaretle
     if (score / total >= 0.7) { // %70 başarı oranı
+      setQuizCompleted(true);
       markTopicAsCompleted(topicId);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'content' && styles.activeTabButton]}
-          onPress={() => setActiveTab('content')}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'content' && styles.activeTabButtonText]}>İçerik</Text>
-        </TouchableOpacity>
+      <View style={styles.progressContainer}>
+        <View style={styles.progressStep}>
+          <View style={[styles.stepCircle, activeStep === 'content' && styles.activeStepCircle, contentCompleted && styles.completedStepCircle]}>
+            <Text style={[styles.stepNumber, (activeStep === 'content' || contentCompleted) && styles.activeStepNumber]}>1</Text>
+          </View>
+          <Text style={[styles.stepText, activeStep === 'content' && styles.activeStepText]}>Konu Anlatımı</Text>
+        </View>
 
-        {topicExercises.length > 0 && (
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'exercises' && styles.activeTabButton]}
-            onPress={() => setActiveTab('exercises')}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'exercises' && styles.activeTabButtonText]}>Alıştırmalar</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.progressLine} />
 
-        {topicQuiz && (
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'quiz' && styles.activeTabButton]}
-            onPress={() => setActiveTab('quiz')}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'quiz' && styles.activeTabButtonText]}>Quiz</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.progressStep}>
+          <View style={[styles.stepCircle,
+            activeStep === 'exercises' && styles.activeStepCircle,
+            exercisesCompleted && styles.completedStepCircle,
+            !contentCompleted && styles.disabledStepCircle]}>
+            <Text style={[styles.stepNumber,
+              (activeStep === 'exercises' || exercisesCompleted) && styles.activeStepNumber,
+              !contentCompleted && styles.disabledStepNumber]}>2</Text>
+          </View>
+          <Text style={[styles.stepText,
+            activeStep === 'exercises' && styles.activeStepText,
+            !contentCompleted && styles.disabledStepText]}>Alıştırmalar</Text>
+        </View>
+
+        <View style={styles.progressLine} />
+
+        <View style={styles.progressStep}>
+          <View style={[styles.stepCircle,
+            activeStep === 'quiz' && styles.activeStepCircle,
+            quizCompleted && styles.completedStepCircle,
+            !exercisesCompleted && styles.disabledStepCircle]}>
+            <Text style={[styles.stepNumber,
+              (activeStep === 'quiz' || quizCompleted) && styles.activeStepNumber,
+              !exercisesCompleted && styles.disabledStepNumber]}>3</Text>
+          </View>
+          <Text style={[styles.stepText,
+            activeStep === 'quiz' && styles.activeStepText,
+            !exercisesCompleted && styles.disabledStepText]}>Quiz</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {activeTab === 'content' && (
-          <View style={styles.content}>{renderContent()}</View>
-        )}
-
-        {activeTab === 'exercises' && (
+        {activeStep === 'content' && (
           <View style={styles.content}>
-            <Text style={styles.sectionTitle}>Alıştırmalar</Text>
-            {topicExercises.map((exercise) => {
-              const isCompleted = (completedExercises[topicId] || []).includes(exercise.id);
+            {renderContent()}
 
-              return (
-                <View key={exercise.id} style={styles.exerciseContainer}>
-                  <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseTitle}>{exercise.title}</Text>
-                    {isCompleted && (
-                      <View style={styles.completedBadge}>
-                        <Text style={styles.completedText}>Tamamlandı</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={styles.exerciseDescription}>{exercise.description}</Text>
-
-                  <CodePlayground
-                    initialCode={exercise.initialCode}
-                    expectedOutput={exercise.expectedOutput}
-                    hint={exercise.hint}
-                    onSuccess={() => handleExerciseComplete(exercise.id)}
-                  />
-                </View>
-              );
-            })}
+            <TouchableOpacity
+              style={[styles.nextButton, contentCompleted && styles.completedButton]}
+              onPress={handleContentComplete}
+            >
+              <Text style={styles.nextButtonText}>
+                {contentCompleted ? 'Tamamlandı - Alıştırmalara Geç' : 'Konuyu Tamamla ve Devam Et'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {activeTab === 'quiz' && topicQuiz && (
+        {activeStep === 'exercises' && (
           <View style={styles.content}>
-            <Text style={styles.sectionTitle}>{topicQuiz.title}</Text>
-            <QuizComponent
-              questions={topicQuiz.questions}
-              onComplete={handleQuizComplete}
-            />
+            {!contentCompleted ? (
+              <View style={styles.lockedContent}>
+                <Text style={styles.lockedText}>Bu bölüme erişmek için önce konu anlatımını tamamlayın.</Text>
+                <TouchableOpacity onPress={() => setActiveStep('content')}>
+                  <Text style={styles.goBackText}>Konu Anlatımına Dön</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.sectionTitle}>Alıştırmalar</Text>
+                <Text style={styles.sectionDescription}>
+                  Öğrendiklerinizi pekiştirmek için aşağıdaki alıştırmaları tamamlayın.
+                  Tüm alıştırmaları tamamladığınızda quiz bölümüne geçebilirsiniz.
+                </Text>
+
+                {topicExercises.map((exercise) => {
+                  const isCompleted = (completedExercises[topicId] || []).includes(exercise.id);
+
+                  return (
+                    <View key={exercise.id} style={styles.exerciseContainer}>
+                      <View style={styles.exerciseHeader}>
+                        <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                        {isCompleted && (
+                          <View style={styles.completedBadge}>
+                            <Text style={styles.completedText}>Tamamlandı</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+
+                      <CodePlayground
+                        initialCode={exercise.initialCode}
+                        expectedOutput={exercise.expectedOutput}
+                        hint={exercise.hint}
+                        onSuccess={() => handleExerciseComplete(exercise.id)}
+                      />
+                    </View>
+                  );
+                })}
+
+                {exercisesCompleted && (
+                  <TouchableOpacity
+                    style={[styles.nextButton, styles.completedButton]}
+                    onPress={() => setActiveStep('quiz')}
+                  >
+                    <Text style={styles.nextButtonText}>Alıştırmalar Tamamlandı - Quiz'e Geç</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {activeStep === 'quiz' && topicQuiz && (
+          <View style={styles.content}>
+            {!exercisesCompleted ? (
+              <View style={styles.lockedContent}>
+                <Text style={styles.lockedText}>Bu bölüme erişmek için önce tüm alıştırmaları tamamlayın.</Text>
+                <TouchableOpacity onPress={() => setActiveStep('exercises')}>
+                  <Text style={styles.goBackText}>Alıştırmalara Dön</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.sectionTitle}>{topicQuiz.title}</Text>
+                <Text style={styles.sectionDescription}>
+                  Öğrendiklerinizi test edin. Başarılı olmak için en az %70 puan almanız gerekiyor.
+                </Text>
+
+                <QuizComponent
+                  questions={topicQuiz.questions}
+                  onComplete={handleQuizComplete}
+                />
+
+                {quizCompleted && (
+                  <View style={styles.congratsContainer}>
+                    <Text style={styles.congratsText}>Tebrikler! Bu konuyu başarıyla tamamladınız.</Text>
+                    {parseInt(topicId) < learningTopics.length && (
+                      <TouchableOpacity
+                        style={styles.nextTopicButton}
+                        onPress={() => router.push(`/topic/${(parseInt(topicId) + 1).toString()}`)}
+                      >
+                        <Text style={styles.nextTopicButtonText}>Sonraki Konuya Geç</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </>
+            )}
           </View>
         )}
       </ScrollView>
@@ -283,33 +385,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-  tabContainer: {
+  // İlerleme adımları
+  progressContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f9f9f9',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 12,
+  progressStep: {
     alignItems: 'center',
+    flex: 1,
   },
-  activeTabButton: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#007bff',
+  progressLine: {
+    height: 2,
+    backgroundColor: '#e0e0e0',
+    flex: 1,
+    marginHorizontal: 5,
   },
-  tabButtonText: {
-    fontSize: 16,
+  stepCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  activeStepCircle: {
+    backgroundColor: '#007bff',
+  },
+  completedStepCircle: {
+    backgroundColor: '#4CAF50',
+  },
+  disabledStepCircle: {
+    backgroundColor: '#e0e0e0',
+    opacity: 0.5,
+  },
+  stepNumber: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  activeStepNumber: {
+    color: '#fff',
+  },
+  disabledStepNumber: {
+    color: '#999',
+  },
+  stepText: {
+    fontSize: 12,
     color: '#666',
   },
-  activeTabButtonText: {
+  activeStepText: {
     color: '#007bff',
     fontWeight: 'bold',
   },
+  disabledStepText: {
+    color: '#999',
+  },
+  // Bölüm başlıkları
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 16,
+    color: '#666',
     marginBottom: 16,
   },
+  // Alıştırmalar
   exerciseContainer: {
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
@@ -341,6 +488,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  // Kilitli içerik
+  lockedContent: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  lockedText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  goBackText: {
+    color: '#007bff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  // Devam butonları
+  nextButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  completedButton: {
+    backgroundColor: '#4CAF50',
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  // Tebrikler mesajı
+  congratsContainer: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  congratsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  nextTopicButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  nextTopicButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  // Navigasyon butonları
   navigationButtons: {
     flexDirection: 'row',
     borderTopWidth: 1,
