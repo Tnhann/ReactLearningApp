@@ -19,9 +19,15 @@ let db;
 let auth;
 
 try {
+  console.log('Firebase başlatılıyor...');
   app = initializeApp(firebaseConfig);
+  console.log('Firebase app başarıyla başlatıldı');
+
   db = getFirestore(app);
+  console.log('Firestore başarıyla başlatıldı');
+
   auth = getAuth(app);
+  console.log('Firebase Authentication başarıyla başlatıldı');
 } catch (error) {
   console.error("Firebase başlatılamadı:", error);
 }

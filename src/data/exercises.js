@@ -52,7 +52,7 @@ export const exercises = {
       id: '3-1',
       title: 'İlk React Native Bileşeni',
       description: 'Ekranda "Merhaba Dünya!" yazan basit bir React Native bileşeni oluşturun.',
-      initialCode: '// Ekranda "Merhaba Dünya!" yazan bir bileşen oluşturun\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport React from 'react';\nimport { Text, View } from 'react-native';\n\nfunction MerhabaDunya() {\n  // Kodunuzu buraya yazın\n  \n}\n\nexport default MerhabaDunya;\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Bileşen oluşturuldu";',
+      initialCode: '// Ekranda "Merhaba Dünya!" yazan bir bileşen oluşturun\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport React from "react";\nimport { Text, View } from "react-native";\n\nfunction MerhabaDunya() {\n  // Kodunuzu buraya yazın\n  \n}\n\nexport default MerhabaDunya;\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Bileşen oluşturuldu";',
       expectedOutput: 'Bileşen oluşturuldu',
       hint: 'View içinde bir Text bileşeni kullanarak metni gösterebilirsiniz.',
       validator: (result) => {
@@ -65,7 +65,7 @@ export const exercises = {
       id: '4-1',
       title: 'Stil Oluşturma',
       description: 'Bir metin için stil oluşturun.',
-      initialCode: '// Bir metin için stil oluşturun\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport { StyleSheet } from \'react-native\';\n\nconst styles = StyleSheet.create({\n  // Kodunuzu buraya yazın\n  \n});\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Stil oluşturuldu";',
+      initialCode: '// Bir metin için stil oluşturun\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport { StyleSheet } from "react-native";\n\nconst styles = StyleSheet.create({\n  // Kodunuzu buraya yazın\n  \n});\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Stil oluşturuldu";',
       expectedOutput: 'Stil oluşturuldu',
       hint: 'StyleSheet.create içinde text adında bir stil oluşturup fontSize, color gibi özellikler ekleyebilirsiniz.',
       validator: (result) => {
@@ -78,7 +78,7 @@ export const exercises = {
       id: '5-1',
       title: 'Sayaç Fonksiyonu',
       description: 'Sayaç değerini artıran bir fonksiyon yazın.',
-      initialCode: '// useState kullanarak bir sayaç değerini artıran fonksiyon yazın\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport React, { useState } from \'react\';\n\nfunction SayacArttir() {\n  const [sayac, setSayac] = useState(0);\n  \n  // Sayacı artıran fonksiyonu yazın\n  \n}\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Fonksiyon yazıldı";',
+      initialCode: '// useState kullanarak bir sayaç değerini artıran fonksiyon yazın\n// Not: Bu kod gerçekten çalıştırılamaz, sadece sözdizimini öğrenmek için\n\n/*\nimport React, { useState } from "react";\n\nfunction SayacArttir() {\n  const [sayac, setSayac] = useState(0);\n  \n  // Sayacı artıran fonksiyonu yazın\n  \n}\n*/\n\n// Doğru cevabı göstermek için aşağıdaki metni döndürün\nreturn "Fonksiyon yazıldı";',
       expectedOutput: 'Fonksiyon yazıldı',
       hint: 'setSayac(sayac + 1) şeklinde sayaç değerini artırabilirsiniz.',
       validator: (result) => {

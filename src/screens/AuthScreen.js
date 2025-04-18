@@ -25,38 +25,57 @@ const AuthScreen = () => {
 
   const handleAuth = async () => {
     if (isLoading) return;
-    
+
     if (isSignUp && (!email || !password)) {
       Alert.alert('Hata', 'Lütfen e-posta ve şifre girin');
       return;
     }
-    
+
     setIsLoading(true);
-    
+    console.log('Authentication işlemi başlatılıyor...');
+
     try {
       let userCredential;
-      
+
       if (isSignUp) {
         // Kayıt ol
+        console.log('Kayıt olma işlemi başlatılıyor:', email);
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('Kayıt olma başarılı:', userCredential.user.uid);
       } else if (email && password) {
         // Giriş yap
+        console.log('Giriş yapma işlemi başlatılıyor:', email);
         userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Giriş yapma başarılı:', userCredential.user.uid);
       } else {
         // Anonim giriş
+        console.log('Anonim giriş işlemi başlatılıyor');
         userCredential = await signInAnonymously(auth);
+        console.log('Anonim giriş başarılı:', userCredential.user.uid);
       }
-      
+
       // Kullanıcı bilgilerini Firestore'a kaydet
       if (userCredential.user) {
-        await createOrUpdateUser(userCredential.user.uid, {
+        console.log('Kullanıcı bilgileri Firestore\'a kaydediliyor:', userCredential.user.uid);
+        const userData = {
           email: userCredential.user.email || 'anonymous',
           createdAt: new Date().toISOString(),
-        });
+          lastLogin: new Date().toISOString()
+        };
+
+        await createOrUpdateUser(userCredential.user.uid, userData);
+        console.log('Kullanıcı bilgileri başarıyla kaydedildi');
+
+        // Başarılı giriş mesajı
+        Alert.alert(
+          'Başarılı',
+          isSignUp ? 'Hesabınız başarıyla oluşturuldu.' : 'Giriş başarılı.'
+        );
       }
     } catch (error) {
+      console.error('Authentication hatası:', error.code, error.message);
       let errorMessage = 'Bir hata oluştu';
-      
+
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Bu e-posta adresi zaten kullanılıyor';
@@ -65,14 +84,24 @@ const AuthScreen = () => {
           errorMessage = 'Geçersiz e-posta adresi';
           break;
         case 'auth/weak-password':
-          errorMessage = 'Şifre çok zayıf';
+          errorMessage = 'Şifre çok zayıf (en az 6 karakter olmalı)';
           break;
         case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          errorMessage = 'E-posta veya şifre hatalı';
+          errorMessage = 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı';
           break;
+        case 'auth/wrong-password':
+          errorMessage = 'Şifre hatalı';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'İnternet bağlantısı hatası';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Çok fazla başarısız giriş denemesi. Lütfen daha sonra tekrar deneyin.';
+          break;
+        default:
+          errorMessage = `Hata: ${error.message}`;
       }
-      
+
       Alert.alert('Hata', errorMessage);
     } finally {
       setIsLoading(false);
@@ -86,7 +115,7 @@ const AuthScreen = () => {
         <Text style={styles.subtitle}>
           {isSignUp ? 'Hesap Oluştur' : 'Giriş Yap'}
         </Text>
-        
+
         {isSignUp || (email && password) ? (
           <>
             <TextInput
@@ -97,7 +126,7 @@ const AuthScreen = () => {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            
+
             <TextInput
               style={styles.input}
               placeholder="Şifre"
@@ -107,7 +136,7 @@ const AuthScreen = () => {
             />
           </>
         ) : null}
-        
+
         <TouchableOpacity
           style={styles.button}
           onPress={handleAuth}
@@ -125,7 +154,7 @@ const AuthScreen = () => {
             </Text>
           )}
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.switchButton}
           onPress={() => setIsSignUp(!isSignUp)}
@@ -135,6 +164,18 @@ const AuthScreen = () => {
               ? 'Zaten hesabınız var mı? Giriş yapın'
               : 'Hesabınız yok mu? Kayıt olun'}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.testButton]}
+          onPress={() => {
+            // Test kullanıcısı ile giriş yap
+            setEmail('test@example.com');
+            setPassword('test123');
+            setIsSignUp(false);
+          }}
+        >
+          <Text style={styles.buttonText}>Test Kullanıcısı Bilgilerini Doldur</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -188,6 +229,10 @@ const styles = StyleSheet.create({
   switchButtonText: {
     color: '#007bff',
     fontSize: 16,
+  },
+  testButton: {
+    backgroundColor: '#4CAF50',
+    marginTop: 20,
   },
 });
 

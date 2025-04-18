@@ -1,21 +1,34 @@
 import { db } from '../config/firebase';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  arrayUnion, 
-  query, 
-  where, 
-  getDocs 
+import {
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 
 // Kullanıcı oluştur veya güncelle
 export const createOrUpdateUser = async (userId, userData) => {
   try {
+    console.log('createOrUpdateUser çağrıldı:', userId);
+    console.log('Firestore db nesnesi:', db ? 'Mevcut' : 'Eksik');
+
+    // Firestore'un hazır olup olmadığını kontrol et
+    if (!db) {
+      console.error('Firestore bağlantısı hazır değil');
+      return false;
+    }
+
     const userRef = doc(db, 'users', userId);
+    console.log('Kullanıcı referansı oluşturuldu');
+
     await setDoc(userRef, userData, { merge: true });
+    console.log('Kullanıcı verileri başarıyla kaydedildi');
+
     return true;
   } catch (error) {
     console.error('Kullanıcı oluşturma/güncelleme hatası:', error);
@@ -28,7 +41,7 @@ export const getUserProgress = async (userId) => {
   try {
     const progressRef = doc(db, 'progress', userId);
     const progressSnap = await getDoc(progressRef);
-    
+
     if (progressSnap.exists()) {
       return progressSnap.data();
     } else {
@@ -38,7 +51,7 @@ export const getUserProgress = async (userId) => {
         completedExercises: {},
         quizScores: {}
       };
-      
+
       await setDoc(progressRef, initialProgress);
       return initialProgress;
     }
@@ -67,23 +80,23 @@ export const markExerciseAsCompleted = async (userId, topicId, exerciseId) => {
   try {
     const progressRef = doc(db, 'progress', userId);
     const progressSnap = await getDoc(progressRef);
-    
+
     if (progressSnap.exists()) {
       const data = progressSnap.data();
       const completedExercises = data.completedExercises || {};
       const topicExercises = completedExercises[topicId] || [];
-      
+
       if (!topicExercises.includes(exerciseId)) {
         topicExercises.push(exerciseId);
-        
+
         await updateDoc(progressRef, {
           [`completedExercises.${topicId}`]: topicExercises
         });
       }
-      
+
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error('Alıştırma tamamlama hatası:', error);
@@ -96,7 +109,7 @@ export const saveQuizScore = async (userId, topicId, score, total) => {
   try {
     const progressRef = doc(db, 'progress', userId);
     const percentage = Math.round((score / total) * 100);
-    
+
     await updateDoc(progressRef, {
       [`quizScores.${topicId}`]: { score, total, percentage }
     });
